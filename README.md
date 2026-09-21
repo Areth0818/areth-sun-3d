@@ -5,6 +5,10 @@
 
 中央に**2階建て参考住宅モデル（南面大開口・軒・バルコニー）**を配置し、**太陽の動きに連動したリアルタイムの日影シミュレーション**に対応しています。
 
+## 公開デプロイURL
+- **本番URL（GitHub Pages）**: [https://areth0818.github.io/areth-sun-3d/](https://areth0818.github.io/areth-sun-3d/)
+- **GitHub リポジトリ**: [https://github.com/Areth0818/areth-sun-3d](https://github.com/Areth0818/areth-sun-3d)
+
 ---
 
 ## 1. アプリ概要
