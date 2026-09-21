@@ -8,7 +8,7 @@ interface HeaderProps {
   onResetCamera: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({
+export const Header: React.FC<HeaderProps> = React.memo(({
   presentationMode,
   onTogglePresentation,
   onOpenHelp,
@@ -59,4 +59,4 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
     </header>
   );
-};
+});

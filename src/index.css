@@ -564,6 +564,15 @@ html, body, #root {
   cursor: pointer;
   accent-color: var(--primary);
 }
+.time-slider:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 4px;
+}
+
+:where(.btn-speed, .btn-view-preset, .btn-close, .season-row):focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
 
 .slider-ticks {
   display: flex;

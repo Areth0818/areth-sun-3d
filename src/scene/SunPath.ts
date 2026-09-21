@@ -8,9 +8,11 @@
  */
 import * as THREE from 'three';
 import { generateDayPathPoints, calculateSolarEvents, calculateSolarPoint, findSolarNoon } from '../astronomy/solarEvents';
+import { getMinutesOfDayJST } from '../utils/dateTime';
 import { createTextSprite } from './Compass';
 import { PATH_STYLES, SEASON_CONFIG } from '../app/constants';
 import { SeasonKey } from '../app/types';
+import { disposeObject3D } from './disposeHelper';
 
 export interface PathMeshObjects {
   group: THREE.Group;
@@ -123,7 +125,7 @@ export function createSunPathRenderer(radius: number): PathMeshObjects {
     // 4. 日の出・日の入りマーカー
     const events = calculateSolarEvents(dateStr, latitude, longitude);
     if (events.sunrise) {
-      const sunrisePt = calculateSolarPoint(dateStr, (events.sunrise.getUTCHours() + 9) * 60 + events.sunrise.getUTCMinutes(), latitude, longitude, radius);
+      const sunrisePt = calculateSolarPoint(dateStr, getMinutesOfDayJST(events.sunrise), latitude, longitude, radius);
       const riseGeo = new THREE.SphereGeometry(0.5, 12, 12);
       const riseMat = new THREE.MeshBasicMaterial({ color: 0x10b981 }); // 緑
       const riseMesh = new THREE.Mesh(riseGeo, riseMat);
@@ -132,7 +134,7 @@ export function createSunPathRenderer(radius: number): PathMeshObjects {
     }
 
     if (events.sunset) {
-      const sunsetPt = calculateSolarPoint(dateStr, (events.sunset.getUTCHours() + 9) * 60 + events.sunset.getUTCMinutes(), latitude, longitude, radius);
+      const sunsetPt = calculateSolarPoint(dateStr, getMinutesOfDayJST(events.sunset), latitude, longitude, radius);
       const setGeo = new THREE.SphereGeometry(0.5, 12, 12);
       const setMat = new THREE.MeshBasicMaterial({ color: 0xf43f5e }); // 赤
       const setMesh = new THREE.Mesh(setGeo, setMat);
@@ -147,11 +149,9 @@ export function createSunPathRenderer(radius: number): PathMeshObjects {
    * 選択日の軌道上に2時間ごとの時刻目盛り（06:00, 08:00...）を生成
    */
   function buildHourTicks(dateStr: string, latitude: number, longitude: number): void {
-    // 既存の目盛りをクリア
+    // 既存の目盛りを確実に解放
     while (ticksGroup.children.length > 0) {
-      const obj = ticksGroup.children[0];
-      ticksGroup.remove(obj);
-      if ((obj as THREE.Mesh).geometry) (obj as THREE.Mesh).geometry.dispose();
+      disposeObject3D(ticksGroup.children[0]);
     }
 
     // 6:00 から 18:00 まで 2時間おき (360, 480, 600, 720, 840, 960, 1080分)
@@ -189,9 +189,9 @@ export function createSunPathRenderer(radius: number): PathMeshObjects {
       visiblePaths,
       showHourTicks
     ) => {
-      // 既存のPathグループをすべて破棄
+      // 既存のPathグループをすべてGPUメモリから完全に破棄
       Object.keys(pathGroups).forEach((key) => {
-        group.remove(pathGroups[key]);
+        disposeObject3D(pathGroups[key]);
         delete pathGroups[key];
       });
 

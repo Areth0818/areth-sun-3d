@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { X, Info, AlertTriangle, Compass, Sun } from 'lucide-react';
 
 interface HelpModalProps {
@@ -6,18 +6,38 @@ interface HelpModalProps {
   onClose: () => void;
 }
 
-export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
+export const HelpModal: React.FC<HelpModalProps> = React.memo(({ isOpen, onClose }) => {
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      // モーダルオープン時に閉じるボタンへフォーカス
+      closeButtonRef.current?.focus();
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
-    <div className="modal-backdrop" onClick={onClose} role="dialog" aria-modal="true">
-      <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-backdrop" onClick={onClose}>
+      <div
+        className="modal-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="help-modal-title"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="modal-header">
           <div className="modal-title-group">
             <Info className="text-primary" size={24} />
-            <h2 className="modal-title">この図の見方・営業説明のポイント</h2>
+            <h2 className="modal-title" id="help-modal-title">この図の見方・営業説明のポイント</h2>
           </div>
-          <button className="btn-close" onClick={onClose} aria-label="閉じる">
+          <button
+            ref={closeButtonRef}
+            className="btn-close"
+            onClick={onClose}
+            aria-label="モーダルを閉じる"
+          >
             <X size={20} />
           </button>
         </div>
@@ -92,4 +112,4 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
       </div>
     </div>
   );
-};
+});

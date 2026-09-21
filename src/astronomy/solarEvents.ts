@@ -39,6 +39,8 @@ export function calculateSolarPoint(
 
 /**
  * 指定日の太陽高度が極大となる南中時刻と南中高度を探索します。
+ * 1日全体（0〜1439分）を粗探索したのち、極大付近を分・秒単位で精細探索することで、
+ * 日本全国および任意の経度において正確な南中を特定します。
  */
 export function findSolarNoon(
   dateStr: string,
@@ -46,10 +48,11 @@ export function findSolarNoon(
   longitude: number
 ): { solarNoonDate: Date; solarNoonMinute: number; maxAltitudeDeg: number; azimuthDeg: number } {
   let bestMinute = 720;
-  let maxAlt = -999;
+  let maxAlt = Number.NEGATIVE_INFINITY;
   let bestAzimuth = 180;
 
-  for (let m = 570; m <= 870; m += 1) {
+  // 1. 1日全体（0〜1440分）を5分刻みでサンプリング
+  for (let m = 0; m < 1440; m += 5) {
     const d = createDateFromJST(dateStr, m);
     const pos = getSolarPosition(d, latitude, longitude);
     if (pos.altitudeDeg > maxAlt) {
@@ -59,9 +62,22 @@ export function findSolarNoon(
     }
   }
 
+  // 2. 最良候補の前後5分を1分刻みで探索
+  const coarseBest = bestMinute;
+  for (let m = Math.max(0, coarseBest - 5); m <= Math.min(1439, coarseBest + 5); m += 1) {
+    const d = createDateFromJST(dateStr, m);
+    const pos = getSolarPosition(d, latitude, longitude);
+    if (pos.altitudeDeg > maxAlt) {
+      maxAlt = pos.altitudeDeg;
+      bestMinute = m;
+      bestAzimuth = pos.azimuthDeg;
+    }
+  }
+
+  // 3. 最良候補の前後60秒を5秒刻みで精密探索
   let refinedMinute = bestMinute;
   for (let secOffset = -60; secOffset <= 60; secOffset += 5) {
-    const m = bestMinute + secOffset / 60;
+    const m = Math.max(0, Math.min(1439.999, bestMinute + secOffset / 60));
     const d = createDateFromJST(dateStr, m);
     const pos = getSolarPosition(d, latitude, longitude);
     if (pos.altitudeDeg > maxAlt) {

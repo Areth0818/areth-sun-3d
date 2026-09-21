@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { MapPin, Calendar, Layers, Eye, RotateCcw } from 'lucide-react';
 import { LocationPreset, SeasonKey } from '../app/types';
 import { LOCATION_PRESETS, DEFAULT_LOCATION, SEASON_CONFIG, PATH_STYLES } from '../app/constants';
-import { validateLatitude, validateLongitude } from '../utils/validation';
+import { validateLatitude, validateLongitude, validateDateStr } from '../utils/validation';
+import { formatDateJST } from '../utils/dateTime';
 
 interface ControlPanelProps {
   location: LocationPreset;
@@ -30,7 +31,7 @@ interface ControlPanelProps {
   onToggleHouseModel: () => void;
 }
 
-export const ControlPanel: React.FC<ControlPanelProps> = ({
+export const ControlPanel: React.FC<ControlPanelProps> = React.memo(({
   location,
   onLocationChange,
   selectedDateStr,
@@ -53,6 +54,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
   const [customLat, setCustomLat] = useState(location.latitude.toString());
   const [customLng, setCustomLng] = useState(location.longitude.toString());
   const [locError, setLocError] = useState<string | null>(null);
+  const [dateError, setDateError] = useState<string | null>(null);
 
   // 都市セレクト変更
   const handleCitySelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -98,7 +100,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
     });
   };
 
-  // 初期値（茨木市）へ戻す
+  // 初期値（デフォルト地点）へ戻す
   const handleResetLocation = () => {
     setIsCustomLoc(false);
     setCustomLat(DEFAULT_LOCATION.latitude.toString());
@@ -107,16 +109,11 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
     onLocationChange(DEFAULT_LOCATION);
   };
 
-  // 今日の日付をセット
+  // 今日の日付をセット (JST基準)
   const handleSetToday = () => {
-    const now = new Date();
-    // JSTの今日
-    const jstMs = now.getTime() + 9 * 3600 * 1000;
-    const jstDate = new Date(jstMs);
-    const yyyy = jstDate.getUTCFullYear();
-    const mm = String(jstDate.getUTCMonth() + 1).padStart(2, '0');
-    const dd = String(jstDate.getUTCDate()).padStart(2, '0');
-    onDateChange(`${yyyy}-${mm}-${dd}`);
+    const todayStr = formatDateJST(new Date());
+    setDateError(null);
+    onDateChange(todayStr);
   };
 
   return (
@@ -149,7 +146,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
             <button
               className="btn btn-outline btn-icon-only"
               onClick={handleResetLocation}
-              title="初期地点（茨木市）へ戻す"
+              title={`初期地点（${DEFAULT_LOCATION.name}）へ戻す`}
               aria-label="初期地点へ戻す"
             >
               <RotateCcw size={16} />
@@ -210,10 +207,24 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
             id="date-picker"
             type="date"
             className="date-input"
+            min="1900-01-01"
+            max="2100-12-31"
             value={selectedDateStr}
-            onChange={(e) => e.target.value && onDateChange(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val) {
+                const res = validateDateStr(val);
+                if (res.isValid) {
+                  setDateError(null);
+                  onDateChange(val);
+                } else {
+                  setDateError(res.errorMessage || "無効な日付です");
+                }
+              }
+            }}
             aria-label="シミュレーション日付"
           />
+          {dateError && <p className="error-text">{dateError}</p>}
         </div>
 
         {/* 代表日ショートカットボタン */}
@@ -381,4 +392,4 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
       </section>
     </div>
   );
-};
+});

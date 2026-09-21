@@ -35,7 +35,11 @@ export function createSunObject(): SunObjects {
   group.add(glowMesh);
 
   // 3. 太陽光線（太陽から観測点(0,0,0)へ向かう光のビーム線）
+  const rayPositions = new Float32Array(6);
+  const rayAttribute = new THREE.BufferAttribute(rayPositions, 3);
+  rayAttribute.setUsage(THREE.DynamicDrawUsage);
   const rayGeo = new THREE.BufferGeometry();
+  rayGeo.setAttribute('position', rayAttribute);
   const rayMat = new THREE.LineBasicMaterial({
     color: 0xfbbf24, // amber-400
     transparent: true,
@@ -45,7 +49,11 @@ export function createSunObject(): SunObjects {
   group.add(rayLine);
 
   // 4. 地面への垂直投影ドロップライン（高度角を視覚化）
+  const dropPositions = new Float32Array(6);
+  const dropAttribute = new THREE.BufferAttribute(dropPositions, 3);
+  dropAttribute.setUsage(THREE.DynamicDrawUsage);
   const dropGeo = new THREE.BufferGeometry();
+  dropGeo.setAttribute('position', dropAttribute);
   const dropMat = new THREE.LineDashedMaterial({
     color: 0x94a3b8,
     dashSize: 0.6,
@@ -83,30 +91,35 @@ export function createSunObject(): SunObjects {
   labelSprite.scale.set(7.5, 2.5, 1);
   group.add(labelSprite);
 
+  let previousLabelKey = '';
   function updateLabel(point: SolarPoint): void {
+    const nextKey = `${Math.floor(point.minutesOfDay)}|${point.altitudeDeg.toFixed(1)}|${point.isAboveHorizon}`;
+    if (nextKey === previousLabelKey) return;
+    previousLabelKey = nextKey;
+
     const ctx = labelCanvas.getContext('2d')!;
     ctx.clearRect(0, 0, labelCanvas.width, labelCanvas.height);
 
-    const isAbove = point.isAboveHorizon;
-    ctx.fillStyle = isAbove ? 'rgba(30, 41, 59, 0.88)' : 'rgba(71, 85, 105, 0.85)';
+    // 背景角丸矩形
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.roundRect(4, 4, labelCanvas.width - 8, labelCanvas.height - 8, 12);
     ctx.fill();
-    ctx.strokeStyle = isAbove ? '#f59e0b' : '#94a3b8';
-    ctx.lineWidth = 2;
     ctx.stroke();
 
-    ctx.font = 'bold 24px "Inter", sans-serif';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
+    // 時刻
+    ctx.font = 'bold 22px "Noto Sans JP", sans-serif';
     ctx.fillStyle = '#ffffff';
-    const timeStr = formatMinutesOfDay(point.minutesOfDay);
-    ctx.fillText(timeStr, 16, 28);
+    ctx.textAlign = 'left';
+    ctx.fillText(formatMinutesOfDay(point.minutesOfDay), 16, 28);
 
-    if (isAbove) {
-      ctx.font = '600 20px "Noto Sans JP", sans-serif';
+    // 高度
+    if (point.isAboveHorizon) {
+      ctx.font = '600 18px "Noto Sans JP", sans-serif';
       ctx.fillStyle = '#fbbf24';
-      ctx.fillText(`高度 ${formatDegrees(point.altitudeDeg)}`, 16, 54);
+      ctx.fillText(`高度: ${formatDegrees(point.altitudeDeg)}`, 16, 54);
     } else {
       ctx.font = '500 16px "Noto Sans JP", sans-serif';
       ctx.fillStyle = '#94a3b8';
@@ -136,10 +149,13 @@ export function createSunObject(): SunObjects {
 
       if (showRay && isAbove) {
         rayLine.visible = true;
-        rayGeo.setFromPoints([
-          new THREE.Vector3(point.x, point.y, point.z),
-          new THREE.Vector3(0, 0, 0),
-        ]);
+        rayPositions[0] = point.x;
+        rayPositions[1] = point.y;
+        rayPositions[2] = point.z;
+        rayPositions[3] = 0;
+        rayPositions[4] = 0;
+        rayPositions[5] = 0;
+        rayAttribute.needsUpdate = true;
       } else {
         rayLine.visible = false;
       }
@@ -147,10 +163,13 @@ export function createSunObject(): SunObjects {
       if (isAbove) {
         dropLine.visible = true;
         footprintMesh.visible = true;
-        dropGeo.setFromPoints([
-          new THREE.Vector3(point.x, point.y, point.z),
-          new THREE.Vector3(point.x, 0.05, point.z),
-        ]);
+        dropPositions[0] = point.x;
+        dropPositions[1] = point.y;
+        dropPositions[2] = point.z;
+        dropPositions[3] = point.x;
+        dropPositions[4] = 0.05;
+        dropPositions[5] = point.z;
+        dropAttribute.needsUpdate = true;
         dropLine.computeLineDistances();
         footprintMesh.position.set(point.x, 0.05, point.z);
       } else {

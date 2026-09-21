@@ -1,6 +1,6 @@
 import React from 'react';
 import { Play, Pause, RotateCcw, Sunrise, Sun, Sunset } from 'lucide-react';
-import { formatMinutesOfDay } from '../utils/dateTime';
+import { formatMinutesOfDay, getMinutesOfDayJST } from '../utils/dateTime';
 import { SolarEvents } from '../app/types';
 
 interface TimeControlsProps {
@@ -26,22 +26,19 @@ export const TimeControls: React.FC<TimeControlsProps> = ({
 }) => {
   const handleJumpSunrise = () => {
     if (events.sunrise) {
-      const m = (events.sunrise.getUTCHours() + 9) * 60 + events.sunrise.getUTCMinutes();
-      onTimeChange(m);
+      onTimeChange(getMinutesOfDayJST(events.sunrise));
     }
   };
 
   const handleJumpNoon = () => {
     if (events.solarNoon) {
-      const m = (events.solarNoon.getUTCHours() + 9) * 60 + events.solarNoon.getUTCMinutes();
-      onTimeChange(m);
+      onTimeChange(getMinutesOfDayJST(events.solarNoon));
     }
   };
 
   const handleJumpSunset = () => {
     if (events.sunset) {
-      const m = (events.sunset.getUTCHours() + 9) * 60 + events.sunset.getUTCMinutes();
-      onTimeChange(m);
+      onTimeChange(getMinutesOfDayJST(events.sunset));
     }
   };
 
@@ -111,8 +108,10 @@ export const TimeControls: React.FC<TimeControlsProps> = ({
             {speedOptions.map((s) => (
               <button
                 key={s}
+                type="button"
                 className={`btn-speed ${playbackSpeed === s ? 'active-speed' : ''}`}
                 onClick={() => onSpeedChange(s)}
+                aria-pressed={playbackSpeed === s}
                 title={`再生速度 ${s}倍`}
               >
                 {s}x

@@ -7,6 +7,8 @@ import {
   formatMinutesOfDay,
   formatDurationMinutes,
   getSeasonalDates,
+  getMinutesOfDayJST,
+  getCurrentYearJST,
 } from '../src/utils/dateTime';
 
 describe('UT-03 時刻・タイムゾーン・JST固定 (dateTime)', () => {
@@ -63,5 +65,17 @@ describe('UT-03 時刻・タイムゾーン・JST固定 (dateTime)', () => {
     expect(seasons.summer).toBe('2026-06-21');
     expect(seasons.autumn).toBe('2026-09-23');
     expect(seasons.winter).toBe('2026-12-22');
+  });
+
+  it('getMinutesOfDayJST がUTC前日になるJST早朝イベントを0〜1439分へ正しく変換すること', () => {
+    // 大阪・夏至の日の出: 04:46 JST = 前日19:46 UTC
+    const sunrise = new Date('2026-06-20T19:46:00.000Z');
+    expect(getMinutesOfDayJST(sunrise)).toBe(286); // 4 * 60 + 46 = 286分
+  });
+
+  it('getCurrentYearJST がUTCでは前年でもJSTの年を正しく返すこと', () => {
+    // 2026-12-31 15:30 UTC = 2027-01-01 00:30 JST
+    const newYearJST = new Date('2026-12-31T15:30:00.000Z');
+    expect(getCurrentYearJST(newYearJST)).toBe(2027);
   });
 });

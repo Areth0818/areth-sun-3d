@@ -13,6 +13,7 @@ import { createCompass, CompassObjects } from './Compass';
 import { createSunPathRenderer, PathMeshObjects } from './SunPath';
 import { createSunObject, SunObjects } from './SunObject';
 import { createHouseModel, HouseModelObjects } from './HouseModel';
+import { disposeObject3D } from './disposeHelper';
 import { SolarPoint, SeasonKey } from '../app/types';
 
 export class SunScene {
@@ -21,6 +22,8 @@ export class SunScene {
   private camera: THREE.PerspectiveCamera;
   private renderer: THREE.WebGLRenderer;
   private controls: OrbitControls;
+  private ambientLight: THREE.AmbientLight;
+  private sunLight: THREE.DirectionalLight;
 
   private skyDome: SkyDomeObjects;
   private compass: CompassObjects;
@@ -28,25 +31,20 @@ export class SunScene {
   private sunObject: SunObjects;
   private houseModel: HouseModelObjects;
 
-  private ambientLight: THREE.AmbientLight;
-  private sunLight: THREE.DirectionalLight;
-
   private animationFrameId: number | null = null;
   private isDisposed: boolean = false;
 
-  // 初期カメラ位置（北のやや上から南の空と太陽軌道全体を見渡す構図）
-  // 北が+Z、南が-Zなので、Z>0から-Z方向を見る
-  private defaultCameraPos = new THREE.Vector3(0, 36, 75);
-  private defaultTarget = new THREE.Vector3(0, 5, -4);
+  private defaultCameraPos = new THREE.Vector3(0, 32, 60);
+  private defaultTarget = new THREE.Vector3(0, 4, 0);
 
   constructor(container: HTMLElement) {
     this.container = container;
 
     // 1. シーン作成
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0xf8fafc); // slate-50
+    this.scene.background = new THREE.Color(0xf1f5f9); // slate-100 (明るく清潔な背景)
 
-    // 2. カメラ作成
+    // 2. カメラ作成（視野角45°の自然なパースペクティブ）
     const width = container.clientWidth || 800;
     const height = container.clientHeight || 600;
     this.camera = new THREE.PerspectiveCamera(45, width / height, 0.5, 500);
@@ -58,9 +56,14 @@ export class SunScene {
       powerPreference: "high-performance",
     });
     this.renderer.setSize(width, height);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap; // 滑らかなソフトシャドウ
+    this.renderer.shadowMap.autoUpdate = false; // 毎フレームのシャドウ再計算を抑止
+    this.renderer.shadowMap.needsUpdate = true; // 初回のみ更新
+
+    this.renderer.domElement.setAttribute('aria-hidden', 'true');
+    this.renderer.domElement.tabIndex = -1;
     container.appendChild(this.renderer.domElement);
 
     // 4. OrbitControls（カメラ操作）
@@ -189,11 +192,13 @@ export class SunScene {
       this.sunLight.intensity = intensity;
       this.sunLight.castShadow = true;
       this.ambientLight.intensity = 0.65;
+      this.renderer.shadowMap.needsUpdate = true;
     } else {
       // 夜間（地平線下）: 影を消去し、薄暗い夜間環境
       this.sunLight.intensity = 0;
       this.sunLight.castShadow = false;
       this.ambientLight.intensity = 0.4;
+      this.renderer.shadowMap.needsUpdate = false;
     }
   }
 
@@ -231,19 +236,26 @@ export class SunScene {
     this.compass.setLabelsVisible(options.showLabels);
     this.sunPath.setHourTicksVisible(options.showHourTicks);
     this.houseModel.setVisible(options.showHouseModel);
+    this.renderer.shadowMap.needsUpdate = true;
   }
 
   /**
-   * リソース解放・破棄
+   * リソース解放・破棄（GPUメモリリーク完全防止）
    */
   public dispose(): void {
     this.isDisposed = true;
     if (this.animationFrameId !== null) {
       cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
     }
     window.removeEventListener('resize', this.handleResize);
 
     this.controls.dispose();
+
+    // シーングラフ全体のジオメトリ・マテリアル・テクスチャを再帰解放
+    disposeObject3D(this.scene);
+
+    this.renderer.renderLists.dispose();
     this.renderer.dispose();
     if (this.renderer.domElement && this.renderer.domElement.parentElement) {
       this.renderer.domElement.parentElement.removeChild(this.renderer.domElement);

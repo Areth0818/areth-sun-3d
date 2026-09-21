@@ -41,5 +41,10 @@ export function validateDateStr(dateStr: string): ValidationResult {
   if (y < 1900 || y > 2100 || m < 1 || m > 12 || d < 1 || d > 31) {
     return { isValid: false, errorMessage: "有効な年月日を入力してください。" };
   }
+  // 実在する日付かどうかを検証（2月29日のうるう年判定や小の月の月末判定）
+  const candidate = new Date(Date.UTC(y, m - 1, d));
+  if (candidate.getUTCFullYear() !== y || candidate.getUTCMonth() !== m - 1 || candidate.getUTCDate() !== d) {
+    return { isValid: false, errorMessage: "カレンダー上に存在しない日付です。" };
+  }
   return { isValid: true };
 }

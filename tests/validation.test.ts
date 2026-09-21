@@ -37,5 +37,10 @@ describe('UT-02 入力検証 (validation)', () => {
     expect(validateDateStr('2026/06/21').isValid).toBe(false);
     expect(validateDateStr('2026-13-01').isValid).toBe(false);
     expect(validateDateStr('2026-06-32').isValid).toBe(false);
+
+    // カレンダー上に存在しない日付の除外
+    expect(validateDateStr('2026-02-31').isValid).toBe(false);
+    expect(validateDateStr('2025-02-29').isValid).toBe(false); // 2025年は平年
+    expect(validateDateStr('2026-04-31').isValid).toBe(false); // 4月は30日まで
   });
 });

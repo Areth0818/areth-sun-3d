@@ -18,13 +18,35 @@ export function createDateFromJST(dateStr: string, minutesOfDay: number = 0): Da
   const month = parseInt(monthStr, 10);
   const day = parseInt(dayStr, 10);
 
-  const hours = Math.floor(minutesOfDay / 60);
-  const minutes = Math.floor(minutesOfDay % 60);
-  const seconds = Math.floor((minutesOfDay * 60) % 60);
+  // 0〜1439.999の範囲にクランプして日跨ぎ・範囲外を防ぐ
+  const clampedMinutes = Math.max(0, Math.min(1439.999, isNaN(minutesOfDay) ? 0 : minutesOfDay));
+
+  const hours = Math.floor(clampedMinutes / 60);
+  const minutes = Math.floor(clampedMinutes % 60);
+  const seconds = Math.floor((clampedMinutes * 60) % 60);
 
   // UTCミリ秒を直接計算 (JSTの時刻から9時間を引く)
   const utcMs = Date.UTC(year, month - 1, day, hours - JST_OFFSET_HOURS, minutes, seconds);
   return new Date(utcMs);
+}
+
+/**
+ * 任意のDateオブジェクトから、JST基準での「その日の経過分 (0〜1439)」を取得します。
+ * 日跨ぎ（UTC前日など）を完全に吸収します。
+ */
+export function getMinutesOfDayJST(date: Date): number {
+  if (!date || isNaN(date.getTime())) {
+    throw new RangeError('Invalid Date for getMinutesOfDayJST');
+  }
+  return Math.floor(getDatePartsJST(date).minutesOfDay);
+}
+
+/**
+ * 現在（または指定日時）のJSTにおける年を取得します。
+ * PCローカルタイムゾーンに依存しません。
+ */
+export function getCurrentYearJST(now: Date = new Date()): number {
+  return getDatePartsJST(now).year;
 }
 
 /**

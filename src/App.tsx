@@ -9,7 +9,7 @@ import { HelpModal } from './components/HelpModal';
 
 import { LocationPreset, SeasonKey, SeasonComparisonRow, SolarPoint } from './app/types';
 import { DEFAULT_LOCATION, SKY_DOME_RADIUS, SEASON_CONFIG } from './app/constants';
-import { getSeasonalDates } from './utils/dateTime';
+import { getSeasonalDates, getCurrentYearJST, getMinutesOfDayJST } from './utils/dateTime';
 import { calculateSolarPoint, calculateSolarEvents } from './astronomy/solarEvents';
 import { getDirectionName16 } from './utils/formatting';
 
@@ -18,7 +18,7 @@ export const App: React.FC = () => {
   const [location, setLocation] = useState<LocationPreset>(DEFAULT_LOCATION);
 
   // 2. 日付状態 (YYYY-MM-DD: 初期値は本年の夏至または現在日)
-  const currentYear = new Date().getFullYear();
+  const currentYear = useMemo(() => getCurrentYearJST(), []);
   const initialSeasonal = useMemo(() => getSeasonalDates(currentYear), [currentYear]);
   const [selectedDateStr, setSelectedDateStr] = useState<string>(initialSeasonal.summer);
 
@@ -132,24 +132,41 @@ export const App: React.FC = () => {
 
   // キーボード操作対応
   useEffect(() => {
+    const isInteractiveTarget = (target: EventTarget | null): boolean => {
+      if (!(target instanceof HTMLElement)) return false;
+      return Boolean(
+        target.closest('input, select, textarea, button, a[href], [role="button"], [contenteditable="true"]')
+      );
+    };
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (['INPUT', 'SELECT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) {
+      if (e.defaultPrevented) return;
+
+      // ヘルプモーダル表示中はEscapeのみ処理し、背景操作を抑制
+      if (isHelpOpen) {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          setIsHelpOpen(false);
+        }
         return;
       }
 
-      if (e.code === 'Space') {
+      // フォーカス中のボタンや入力欄でのSpaceや矢印キーの操作を奪わない
+      if (isInteractiveTarget(e.target)) {
+        return;
+      }
+
+      if (e.code === 'Space' || e.key === ' ') {
         e.preventDefault();
         setIsPlaying((prev) => !prev);
-      } else if (e.code === 'ArrowRight') {
+      } else if (e.code === 'ArrowRight' || e.key === 'ArrowRight') {
         e.preventDefault();
         setMinuteOfDay((prev) => Math.min(1439, prev + (e.shiftKey ? 30 : 5)));
-      } else if (e.code === 'ArrowLeft') {
+      } else if (e.code === 'ArrowLeft' || e.key === 'ArrowLeft') {
         e.preventDefault();
         setMinuteOfDay((prev) => Math.max(0, prev - (e.shiftKey ? 30 : 5)));
-      } else if (e.code === 'Escape') {
-        if (isHelpOpen) {
-          setIsHelpOpen(false);
-        } else if (presentationMode) {
+      } else if (e.code === 'Escape' || e.key === 'Escape') {
+        if (presentationMode) {
           setPresentationMode(false);
         }
       }
@@ -186,7 +203,7 @@ export const App: React.FC = () => {
   // 時刻先頭リセット（日の出の30分前へ）
   const handleResetTime = () => {
     if (currentEvents.sunrise) {
-      const sunriseMin = (currentEvents.sunrise.getUTCHours() + 9) * 60 + currentEvents.sunrise.getUTCMinutes();
+      const sunriseMin = getMinutesOfDayJST(currentEvents.sunrise);
       setMinuteOfDay(Math.max(0, sunriseMin - 30));
     } else {
       setMinuteOfDay(360);

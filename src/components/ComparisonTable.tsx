@@ -8,7 +8,7 @@ interface ComparisonTableProps {
   onSelectSeasonDate: (dateStr: string) => void;
 }
 
-export const ComparisonTable: React.FC<ComparisonTableProps> = ({
+export const ComparisonTable: React.FC<ComparisonTableProps> = React.memo(({
   rows,
   selectedDateStr,
   onSelectSeasonDate,
@@ -17,7 +17,7 @@ export const ComparisonTable: React.FC<ComparisonTableProps> = ({
     <div className="comparison-table-wrapper">
       <div className="table-header-title-row">
         <h3 className="table-title">季節による日照の比較</h3>
-        <span className="table-hint">※クリックするとその季節の日付へ切り替わります</span>
+        <span className="table-hint">※クリックまたは選択するとその季節の日付へ切り替わります</span>
       </div>
 
       <div className="table-responsive">
@@ -43,6 +43,15 @@ export const ComparisonTable: React.FC<ComparisonTableProps> = ({
                   key={row.seasonKey}
                   className={`season-row ${isCurrent ? 'row-selected' : ''}`}
                   onClick={() => onSelectSeasonDate(row.dateStr)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      onSelectSeasonDate(row.dateStr);
+                    }
+                  }}
+                  tabIndex={0}
+                  role="button"
+                  aria-pressed={isCurrent}
                   title={`${row.seasonName} (${row.dateStr}) を選択`}
                 >
                   <td className="season-name-cell">
@@ -73,4 +82,4 @@ export const ComparisonTable: React.FC<ComparisonTableProps> = ({
       </div>
     </div>
   );
-};
+});
