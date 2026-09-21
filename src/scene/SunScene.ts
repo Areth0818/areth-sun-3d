@@ -34,8 +34,8 @@ export class SunScene {
   private animationFrameId: number | null = null;
   private isDisposed: boolean = false;
 
-  private defaultCameraPos = new THREE.Vector3(0, 32, 60);
-  private defaultTarget = new THREE.Vector3(0, 4, 0);
+  private defaultCameraPos = new THREE.Vector3(20, 16, -38);
+  private defaultTarget = new THREE.Vector3(0, 3.5, -2);
 
   constructor(container: HTMLElement) {
     this.container = container;
@@ -155,23 +155,27 @@ export class SunScene {
   /**
    * クイック視点プリセット
    */
-  public setViewPreset(preset: 'south' | 'top' | 'east' | 'west'): void {
+  public setViewPreset(preset: 'south' | 'top' | 'sky' | 'east' | 'west'): void {
     if (preset === 'south') {
-      // 南の空正面
-      this.camera.position.set(0, 36, 75);
-      this.controls.target.set(0, 5, -4);
+      // 住宅の南面正面（掃き出し窓・軒・日影の確認に最適）
+      this.camera.position.set(0, 14, -40);
+      this.controls.target.set(0, 3.5, -2);
     } else if (preset === 'top') {
-      // 天頂・真上から見下ろす（日の出・日の入り・影の伸びの確認に最適）
-      this.camera.position.set(0, 110, 0.1);
+      // 天頂・真上から見下ろす（上が北+Z、下が南-Z、右が東+X、左が西-Xの標準配置図ビュー）
+      this.camera.position.set(0, 115, -0.05);
       this.controls.target.set(0, 0, 0);
+    } else if (preset === 'sky') {
+      // 南空見上げ（北側から南の空の太陽軌道全体を見上げる全景ビュー）
+      this.camera.position.set(0, 32, 65);
+      this.controls.target.set(0, 5, -4);
     } else if (preset === 'east') {
       // 東から西を見る
-      this.camera.position.set(75, 30, 0);
-      this.controls.target.set(-5, 4, 0);
+      this.camera.position.set(52, 16, -2);
+      this.controls.target.set(0, 3.5, -2);
     } else if (preset === 'west') {
       // 西から東を見る
-      this.camera.position.set(-75, 30, 0);
-      this.controls.target.set(5, 4, 0);
+      this.camera.position.set(-52, 16, -2);
+      this.controls.target.set(0, 3.5, -2);
     }
     this.controls.update();
   }

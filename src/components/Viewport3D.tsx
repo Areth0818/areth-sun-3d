@@ -99,7 +99,7 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
     sceneRef.current.resetCamera();
   }, [cameraResetTrigger]);
 
-  const handleViewPreset = (preset: 'south' | 'top' | 'east' | 'west') => {
+  const handleViewPreset = (preset: 'south' | 'top' | 'sky' | 'east' | 'west') => {
     if (sceneRef.current) {
       sceneRef.current.setViewPreset(preset);
     }
@@ -123,20 +123,31 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
     <div className="viewport-container" ref={containerRef}>
       <div className="view-presets-overlay">
         <button
+          type="button"
           className="btn-view-preset"
           onClick={() => handleViewPreset('south')}
-          title="南の空正面視点（商談おすすめ）"
+          title="建物の南面（窓・軒・日影）を正面から見る（商談おすすめ）"
         >
-          南正面
+          南面(建物正面)
         </button>
         <button
+          type="button"
           className="btn-view-preset"
           onClick={() => handleViewPreset('top')}
-          title="真上から見下ろす（日の出・日の入り方位の比較に最適）"
+          title="真上から見下ろす（上が北・下が南・右が東の標準配置図ビュー）"
         >
-          真上(俯瞰)
+          真上(北が上)
         </button>
         <button
+          type="button"
+          className="btn-view-preset"
+          onClick={() => handleViewPreset('sky')}
+          title="南の空を見上げ、太陽軌道全体を見渡す視点"
+        >
+          南空(太陽全景)
+        </button>
+        <button
+          type="button"
           className="btn-view-preset"
           onClick={() => handleViewPreset('east')}
           title="東側からの視点"
@@ -144,6 +155,7 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
           東から
         </button>
         <button
+          type="button"
           className="btn-view-preset"
           onClick={() => handleViewPreset('west')}
           title="西側からの視点"
